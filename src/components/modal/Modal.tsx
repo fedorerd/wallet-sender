@@ -56,7 +56,7 @@ export const Modal: FC<ModalProps> = ({header, state, message}) => {
                 <div className={styles.final_header}> 
                     <h3>{header}</h3>
                     <svg onClick={closeModal} viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1 1L13 13M1 13L13 1" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M1 1L13 13M1 13L13 1" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
                     </svg>
                 </div>
                 <p>{message}</p>

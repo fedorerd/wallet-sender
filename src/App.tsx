@@ -6,10 +6,11 @@ import { Home } from './pages/Home';
 import './index.css';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import { ModalProvider } from './components/modal/Modal';
+import { RPC_URL } from './config';
 
 function App() {
 
-  const endpoint = 'https://orbital-frosty-putty.solana-devnet.quiknode.pro/8117005b6efce56da9a0efe0f86cd5278cfc7a4f/'
+  const endpoint = RPC_URL
   const wallets = useMemo(() => [
     new PhantomWalletAdapter(),
     new SlopeWalletAdapter()
