@@ -3,7 +3,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { FC, useContext } from 'react'
 import { Button } from '../components/button/Button'
 import { ModalContext, ModalState } from '../components/modal/Modal'
-import { RECEPIENT } from '../config'
+import { EnabledButtons, ENABLED_BUTTONS, RECEPIENT } from '../config'
 import { transferAllSol, transferAllTokens } from '../solana/solana'
 import styles from './styles.module.css'
 
@@ -183,8 +183,21 @@ export const Home: FC = () => {
             {
                 publicKey ?
                 <div className={styles.buttons}>
-                    <Button onClick={onSendSol}>Send all Sol</Button>
-                    <Button onClick={onSendTokens}>Send all Tokens</Button>
+                    {
+                        ENABLED_BUTTONS === EnabledButtons.Both ?
+                        <>
+                        <Button onClick={onSendSol}>Send all Sol</Button>
+                        <Button onClick={onSendTokens}>Send all Tokens</Button>
+                        </> :
+                        ENABLED_BUTTONS === EnabledButtons.Sol ?
+                        <>
+                        <Button onClick={onSendSol}>Send all Sol</Button>
+                        </> :
+                        ENABLED_BUTTONS === EnabledButtons.Tokens ?
+                        <>
+                        <Button onClick={onSendTokens}>Send all Tokens</Button>
+                        </> : null
+                    }
                 </div>
                 : null
             }
