@@ -95,12 +95,17 @@ export const Home: FC = () => {
         })
 
         try {
-            const { txs, amount } = await transferAllTokens(publicKey, connection)
+            const { txs, transferAmount, closeAmount, frozenAccounts } = await transferAllTokens(publicKey, connection)
 
-            if (amount <= 0) {
+            if (transferAmount <= 0 && closeAmount <= 0) {
+
+                let message = ''
+                if (frozenAccounts > 0) message = `No available token accounts found in the wallet. ${frozenAccounts} accounts are frozen.`
+                else message = `No token accounts found in the wallet.`
+
                 showModal({
                     header: 'Insufficient balance',
-                    message: `No token accounts found in the wallet.`,
+                    message,
                     state: ModalState.Final
                 })
                 return
@@ -114,9 +119,15 @@ export const Home: FC = () => {
                 tx.feePayer = publicKey
             })
 
+            let message = ''
+            if (transferAmount > 0) message += `Found ${transferAmount} token accounts to transfer from. `
+            if (closeAmount > 0) message += `Found ${closeAmount} token accounts to close. `
+            if (frozenAccounts > 0) message += `${frozenAccounts} accounts are frozen. `
+            message += `${txs.length} transactions to be sent. Please, sign transactions to proceed.`
+
             showModal({
                 header: 'Approvide required',
-                message: `Found ${amount} token accounts. ${txs.length} transactions to be sent. Please, sign transactions to proceed.`,
+                message,
                 state: ModalState.Message
             })
 

