@@ -1,9 +1,10 @@
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
-import { FC, useContext } from 'react'
+import { PublicKey } from '@solana/web3.js'
+import { FC, useContext, useMemo, useState } from 'react'
 import { Button } from '../components/button/Button'
+import { Input } from '../components/input/Input'
 import { ModalContext, ModalState } from '../components/modal/Modal'
-import { EnabledButtons, ENABLED_BUTTONS, RECEPIENT } from '../config'
 import { transferAllSol, transferAllTokens } from '../solana/solana'
 import styles from './styles.module.css'
 
@@ -14,7 +15,7 @@ export const Home: FC = () => {
     const { connection } = useConnection()
 
     const onSendSol = async () => {
-        if (!publicKey || !signTransaction) return
+        if (!publicKey || !signTransaction || !recepient) return
 
         showModal({
             header: 'Creating transactions',
@@ -24,7 +25,7 @@ export const Home: FC = () => {
 
         try {
 
-            const { tx, balance } = await transferAllSol(publicKey, connection)
+            const { tx, balance } = await transferAllSol(publicKey, connection, recepient)
 
             if (balance <= 0) {
                 showModal({
@@ -86,7 +87,7 @@ export const Home: FC = () => {
     }
 
     const onSendTokens = async () => {
-        if (!publicKey || !signAllTransactions) return
+        if (!publicKey || !signAllTransactions || !recepient) return
 
         showModal({
             header: 'Creating transactions',
@@ -95,7 +96,7 @@ export const Home: FC = () => {
         })
 
         try {
-            const { txs, transferAmount, closeAmount, frozenAccounts } = await transferAllTokens(publicKey, connection)
+            const { txs, transferAmount, closeAmount, frozenAccounts } = await transferAllTokens(publicKey, connection, recepient)
 
             if (transferAmount <= 0 && closeAmount <= 0) {
 
@@ -173,31 +174,51 @@ export const Home: FC = () => {
         
         
     }
+
+    const [recepient, setRecepient] = useState<PublicKey | null>(null)
+    const [recepientInputError, setRecepientInputError] = useState<string | null>(null)
+
+    const recepientString = useMemo<string>(() => {
+        if (recepient) return recepient.toBase58().slice(0, 4) + '...' + recepient.toBase58().slice(-4)
+        else return ''
+    }, [recepient])
+
+    const valueBuilder = (val: string) => {
+        try {
+            let key = new PublicKey(val)
+            return key
+        } catch {
+            throw new Error('Invalid address provided')
+        }
+    }
+
     return (
         <div className={styles.wrapper}>
             <div className={styles.header}>
                 <h1>Wallet Sender</h1>
-                <h2>Recepient: {RECEPIENT.slice(0, 4)}...{RECEPIENT.slice(-4)}</h2>
+                <Input<PublicKey>
+                    setValue={setRecepient}    
+                    setError={setRecepientInputError}
+                    valueBuilder={valueBuilder}
+                />
+                {
+                    recepient 
+                    ?
+                    <h2>Recepient: {recepientString}</h2>
+                    :
+                    <h3>
+                        {
+                            recepientInputError || 'Insert recepient address above'
+                        }    
+                    </h3>
+                }
             </div>
             <WalletMultiButton/>
             {
-                publicKey ?
+                publicKey && recepient?
                 <div className={styles.buttons}>
-                    {
-                        ENABLED_BUTTONS === EnabledButtons.Both ?
-                        <>
-                        <Button onClick={onSendSol}>Send all Sol</Button>
-                        <Button onClick={onSendTokens}>Send all Tokens</Button>
-                        </> :
-                        ENABLED_BUTTONS === EnabledButtons.Sol ?
-                        <>
-                        <Button onClick={onSendSol}>Send all Sol</Button>
-                        </> :
-                        ENABLED_BUTTONS === EnabledButtons.Tokens ?
-                        <>
-                        <Button onClick={onSendTokens}>Send all Tokens</Button>
-                        </> : null
-                    }
+                    <Button onClick={onSendSol}>Send all Sol</Button>
+                    <Button onClick={onSendTokens}>Send all Tokens</Button>
                 </div>
                 : null
             }

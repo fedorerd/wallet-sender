@@ -1,16 +1,17 @@
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter, SlopeWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { useMemo } from 'react';
-import { Home } from './pages/Home';
-import './index.css';
 import '@solana/wallet-adapter-react-ui/styles.css';
+import { PhantomWalletAdapter, SlopeWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { clusterApiUrl } from '@solana/web3.js';
+import { useMemo } from 'react';
 import { ModalProvider } from './components/modal/Modal';
-import { RPC_URL } from './config';
+import './index.css';
+import { Home } from './pages/Home';
 
 function App() {
 
-  const endpoint = RPC_URL
+  const endpoint = process.env.REACT_APP_RPC_URL || clusterApiUrl(WalletAdapterNetwork.Mainnet)
   const wallets = useMemo(() => [
     new PhantomWalletAdapter(),
     new SlopeWalletAdapter()
