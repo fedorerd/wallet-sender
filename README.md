@@ -2,6 +2,10 @@
 
 Tool for bulk sending tokens and sol to another wallet. 
 
+## Deployment link
+
+https://wallet-sender.vercel.app/
+
 ## Available Stuff
 
 ### Send all Sol
